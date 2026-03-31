@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedWard Pro | Mobil Uyumlu Servis Yönetimi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container no-print">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo">MW</div>
+                <h2>MedWard</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" data-tab="dashboard" class="active">
+                    <span class="nav-icon">🏥</span>
+                    <span class="nav-text">Panom</span>
+                </a>
+                <a href="#" data-tab="tools">
+                    <span class="nav-icon">🧮</span>
+                    <span class="nav-text">Araçlar</span>
+                </a>
+            </nav>
+            
+            <div class="user-profile">
+                <div class="avatar">DR</div>
+                <div class="info">
+                    <p class="name">Klinik Doktoru</p>
+                    <p class="role" style="color:var(--success); font-weight:600; font-size:0.75rem;">🟢 Bulut Sunucusu Aktif</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- TAB: PANO (DASHBOARD) -->
+            <div id="tab-dashboard" class="tab-content active">
+                <header class="header">
+                    <div>
+                        <h1>Servis Durumu</h1>
+                        <p class="date" id="currentDate">Tarih</p>
+                    </div>
+                    <button class="btn btn-primary" id="btnNewPatient">+ Yeni Hasta</button>
+                </header>
+
+                <div class="metrics">
+                    <div class="metric-card glass">
+                        <div class="metric-icon" style="background: rgba(67, 97, 238, 0.1); color: var(--primary);">🛏️</div>
+                        <div>
+                            <h3>Toplam Yatan</h3>
+                            <p class="value" id="valTotal">0</p>
+                        </div>
+                    </div>
+                    <div class="metric-card glass">
+                        <div class="metric-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">⚡</div>
+                        <div>
+                            <h3>Aksiyon Bekleyen</h3>
+                            <p class="value" id="valAction">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-action">
+                    <h2>Hasta Takibi</h2>
+                    <input type="text" id="searchInput" class="search-input" placeholder="İsim, Oda veya Tanı ara...">
+                </div>
+                
+                <div class="patient-grid" id="patientGrid">
+                    <!-- Cards will be injected here via JS -->
+                </div>
+            </div>
+
+            <!-- TAB: MEDİKAL ARAÇLAR -->
+            <div id="tab-tools" class="tab-content hidden">
+                <header class="header">
+                    <div>
+                        <h1>Klinik Skorlamalar</h1>
+                        <p class="text-muted">Servis ve Acil değerlendirme araçları.</p>
+                    </div>
+                </header>
+                <div class="tools-grid">
+                    
+                    <!-- qSOFA -->
+                    <div class="tool-card glass">
+                        <div class="tool-icon">🩺</div>
+                        <h3>qSOFA Skoru (Sepsis)</h3>
+                        <p class="text-muted mb-3" style="font-size:0.85rem">Enfeksiyon şüphesi olan hastalarda mortalite riskini öngörme.</p>
+                        <label class="check-container"><input type="checkbox" id="qsofa1"> Solunum Sayısı ≥ 22/dk</label>
+                        <label class="check-container"><input type="checkbox" id="qsofa2"> Mental Durum Değişikliği var</label>
+                        <label class="check-container"><input type="checkbox" id="qsofa3"> Sistolik KB ≤ 100 mmHg</label>
+                        <div class="result-box mt-3" id="qsofaResult">Skor: 0 (Düşük Risk)</div>
+                    </div>
+
+                    <!-- GKS -->
+                    <div class="tool-card glass">
+                        <div class="tool-icon">🧠</div>
+                        <h3>Glasgow Koma Skalası</h3>
+                        <div class="form-group">
+                            <label>Göz Açma (E)</label>
+                            <select id="gcsE" class="calc-select">
+                                <option value="4">4 - Spontan açık</option>
+                                <option value="3">3 - Sese açıyor</option>
+                                <option value="2">2 - Ağrıya açıyor</option>
+                                <option value="1">1 - Açmıyor</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Sözel Yanıt (V)</label>
+                            <select id="gcsV" class="calc-select">
+                                <option value="5">5 - Oryante</option>
+                                <option value="4">4 - Konfüze</option>
+                                <option value="3">3 - Anlamsız kelimeler</option>
+                                <option value="2">2 - Anlaşılmaz sesler</option>
+                                <option value="1">1 - Yanıt yok</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Motor Yanıt (M)</label>
+                            <select id="gcsM" class="calc-select">
+                                <option value="6">6 - Emirlere uyuyor</option>
+                                <option value="5">5 - Ağrıyı lokalize ediyor</option>
+                                <option value="4">4 - Ağrıdan çekiyor</option>
+                                <option value="3">3 - Anormal fleksör</option>
+                                <option value="2">2 - Anormal ekstansör</option>
+                                <option value="1">1 - Yanıt yok</option>
+                            </select>
+                        </div>
+                        <div class="result-box mt-3" id="gcsResult">Toplam GKS: 15 / 15</div>
+                    </div>
+
+                    <!-- CURB-65 -->
+                    <div class="tool-card glass">
+                        <div class="tool-icon">🫁</div>
+                        <h3>CURB-65 Skoru (Pnömoni)</h3>
+                        <p class="text-muted mb-3" style="font-size:0.85rem">Toplum kökenli pnömoni hastalarında mortalite ve yatış kararı.</p>
+                        <label class="check-container"><input type="checkbox" id="curbC"> <strong>C</strong>onfusion (Mental durum bozukluğu)</label>
+                        <label class="check-container"><input type="checkbox" id="curbU"> <strong>U</strong>rea > 42.8 mg/dL (BUN > 19 mg/dL)</label>
+                        <label class="check-container"><input type="checkbox" id="curbR"> <strong>R</strong>espiratory Rate ≥ 30/dk</label>
+                        <label class="check-container"><input type="checkbox" id="curbB"> <strong>B</strong>lood Pressure (Sistolik < 90 veya Diastolik ≤ 60)</label>
+                        <label class="check-container"><input type="checkbox" id="curb65"> Yaş ≥ <strong>65</strong></label>
+                        <div class="result-box mt-3" id="curbResult">Skor: 0 (Ayaktan Tedavi Düşünülebilir)</div>
+                    </div>
+
+                    <!-- Wells Criteria -->
+                    <div class="tool-card glass">
+                        <div class="tool-icon">🩸</div>
+                        <h3>Wells Skoru (Pulmoner Emboli)</h3>
+                        <p class="text-muted mb-3" style="font-size:0.85rem">Pulmoner Emboli klinik olasılığı tahmini.</p>
+                        <label class="check-container"><input type="checkbox" id="wells1" value="3"> DVT klinik şüphesi varlığı (Bulgular)</label>
+                        <label class="check-container"><input type="checkbox" id="wells2" value="3"> PE'den daha olası alternatif tanının olmaması</label>
+                        <label class="check-container"><input type="checkbox" id="wells3" value="1.5"> Kalp Hızı > 100/dk</label>
+                        <label class="check-container"><input type="checkbox" id="wells4" value="1.5"> Son 4 haftada cerrahi veya < 3 gün immobilizasyon</label>
+                        <label class="check-container"><input type="checkbox" id="wells5" value="1.5"> Geçirilmiş DVT veya PE öyküsü</label>
+                        <label class="check-container"><input type="checkbox" id="wells6" value="1"> Hemoptizi</label>
+                        <label class="check-container"><input type="checkbox" id="wells7" value="1"> Aktif Malignite (son 6 ayda veya palyasyon)</label>
+                        <div class="result-box mt-3" id="wellsResult">Skor: 0 (Düşük Olasılık <%10)</div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay no-print" id="patientModal">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h2 id="modalTitle">Hasta Düzenle</h2>
+                <button class="close-btn" id="btnCloseModal">✕</button>
+            </div>
+            <form id="patientForm">
+                <input type="hidden" id="editPatientId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ad Soyad</label>
+                        <input type="text" id="pName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Oda / Yatak</label>
+                        <input type="text" id="pBed" required placeholder="Örn: 101-A">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tanı / Şikayet</label>
+                    <input type="text" id="pDiagnosis" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Aksiyon Etiketleri</label>
+                    <div class="tags-selector" id="tagsSelector">
+                        <label class="tag-label"><input type="checkbox" value="Kan Bekleniyor"> Kan Sonucu Bekleniyor</label>
+                        <label class="tag-label"><input type="checkbox" value="Konsültasyon"> Konsültasyon İstenecek</label>
+                        <label class="tag-label"><input type="checkbox" value="Görüntüleme"> Görüntüleme Çekilecek</label>
+                        <label class="tag-label"><input type="checkbox" value="Riskli"> Yakın Takip / Riskli</label>
+                        <label class="tag-label"><input type="checkbox" value="Taburcu"> Taburcu Edilecek</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notlar</label>
+                    <textarea id="pNotes" rows="3" placeholder="Süreci ve aksiyonları yazın..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
