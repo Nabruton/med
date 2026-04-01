@@ -32,6 +32,30 @@
             --glass-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.05);
         }
 
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --secondary: #cbd5e1;
+            --success: #22c55e;
+            --glass-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.3);
+        }
+        [data-theme="dark"] body {
+            background-image: 
+                radial-gradient(circle at top right, #1e3a8a 0%, transparent 40%),
+                radial-gradient(circle at bottom left, #3b0764 0%, transparent 40%); 
+        }
+        [data-theme="dark"] .mobile-header, [data-theme="dark"] .sidebar, [data-theme="dark"] .nav-bottom { background: rgba(15, 23, 42, 0.98); border-color: #334155; }
+        [data-theme="dark"] .nav-menu a:hover { background: #1e293b; }
+        [data-theme="dark"] .nav-menu a.active { background: #1e3a8a; }
+        [data-theme="dark"] .user-profile, [data-theme="dark"] .btn-epikriz { background: #1e293b; border-color: #334155; }
+        [data-theme="dark"] .search-input, [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group textarea, [data-theme="dark"] .calc-select { background: #1e293b; border-color: #334155; color: #f8fafc; }
+        [data-theme="dark"] .p-notes, [data-theme="dark"] .nav-divider { border-color: #334155; }
+        [data-theme="dark"] .p-diagnosis { background: #1e3a8a; }
+        [data-theme="dark"] .todo-input-g input { border-color: #334155; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
 
         body { 
@@ -138,7 +162,13 @@
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
 
         .patient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; }
-        .patient-card { padding: 24px; position: relative; display: flex; flex-direction: column; cursor: grab; }
+        .patient-card { padding: 24px; position: relative; display: flex; flex-direction: column; }
+        .drag-handle { cursor: grab; background: none; border: none; font-size: 1.2rem; }
+        .todo-list { list-style: none; margin-top: 12px; margin-bottom: 16px; border-top: 1px dashed var(--card-border); padding-top: 12px; }
+        .todo-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 0.9rem; }
+        .todo-input-g { display: flex; gap: 8px; margin-bottom: 12px; }
+        .todo-input-g input { flex:1; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: transparent; color: var(--text-main); font-size: 0.85rem;}
+        .todo-input-g button { padding: 6px 10px; border-radius: 6px; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: 600; font-size: 0.8rem;}
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .p-bed { background: #1e293b; color: white; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
         .patient-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; }
@@ -222,7 +252,10 @@
                 <div class="logo">KH</div>
                 <h2 style="font-size:1.1rem">KoruyucuHekim</h2>
             </div>
-            <button class="btn-icon" style="background:none; border:none; font-size:1.4rem" onclick="exportData()">💾</button>
+            <div style="display:flex; gap:12px;">
+                <button class="btn-icon theme-btn-icon" style="background:none; border:none; font-size:1.4rem" onclick="toggleTheme()">🌙</button>
+                <button class="btn-icon" style="background:none; border:none; font-size:1.4rem" onclick="exportData()">💾</button>
+            </div>
         </header>
 
         <!-- DESKTOP SIDEBAR -->
@@ -241,6 +274,7 @@
                     <span class="nav-text">Klinik Araçlar</span>
                 </a>
                 <div class="nav-divider">Hafıza & Yedek</div>
+                <a href="#" onclick="toggleTheme()"><span class="nav-icon theme-btn-icon">🌙</span> <span class="nav-text">Tema Değiştir</span></a>
                 <a href="#" onclick="exportData()"><span class="nav-icon">💾</span> <span class="nav-text">Verileri Yedekle</span></a>
                 <a href="#" onclick="importData()"><span class="nav-icon">📂</span> <span class="nav-text">Yedek Yükle</span></a>
             </nav>
@@ -262,6 +296,10 @@
             <a href="#" data-tab="tools">
                 <span class="nav-icon">🧮</span>
                 <span class="nav-text">Araçlar</span>
+            </a>
+            <a href="#" onclick="toggleTheme()">
+                <span class="nav-icon theme-btn-icon">🌙</span>
+                <span class="nav-text">Tema</span>
             </a>
             <a href="#" onclick="exportData()">
                 <span class="nav-icon">💾</span>
@@ -392,14 +430,33 @@
                     }
                 }
 
+                let todosHtml = '<ul class="todo-list">';
+                if(p.todos) {
+                    p.todos.forEach((t, i) => {
+                        todosHtml += `
+                        <li class="todo-item" onclick="toggleTodo(${p.id}, ${i})" style="cursor:pointer;">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} style="pointer-events:none; margin-top:3px;"> 
+                            <span style="${t.completed ? 'text-decoration:line-through;color:var(--text-muted)' : ''}; flex:1;">${t.text}</span>
+                            <button onclick="event.stopPropagation(); deleteTodo(${p.id}, ${i})" style="background:none; border:none; color:#dc2626; cursor:pointer; font-size:1.1rem; padding:0 4px;" title="Görevi Sil">×</button>
+                        </li>`;
+                    });
+                }
+                todosHtml += `</ul>
+                <div class="todo-input-g">
+                    <input type="text" id="todoInp_${p.id}" placeholder="Hızlı görev ekle..." onkeypress="if(event.key==='Enter') addTodo(${p.id})">
+                    <button onclick="addTodo(${p.id})">Ekle</button>
+                </div>`;
+
                 const card = document.createElement('div');
                 card.className = cardClass;
+                card.setAttribute('data-id', p.id);
                 card.innerHTML = `
-                    <div class="card-header"><span class="p-bed">${p.bed}</span> <div><button class="btn-icon" onclick="editP(${p.id})">✏️</button><button class="btn-icon" onclick="deleteP(${p.id})" style="color:red">🗑️</button></div></div>
-                    <h3>${p.name}</h3><div class="p-diagnosis">${p.diag}</div>
+                    <div class="card-header"><span class="p-bed">Oda: ${p.bed}</span> <div style="display:flex; align-items:center; gap:4px;"><button class="btn-icon drag-handle">↕️</button><button class="btn-icon" onclick="editP(${p.id})" style="border:none;background:none;font-size:1.1rem;cursor:pointer;">✏️</button><button class="btn-icon" onclick="deleteP(${p.id})" style="border:none;background:none;font-size:1.1rem;cursor:pointer;color:red">🗑️</button></div></div>
+                    <h3 style="font-size:1.1rem; font-weight:700">Ad: ${p.name}</h3><div class="p-diagnosis">Tanı: ${p.diag}</div>
                     <div>${daysHtml}</div>
                     ${tagsHtml}
-                    <div class="p-notes">${p.notes || ''}</div>
+                    <div class="p-notes">${p.notes || '-'}</div>
+                    ${todosHtml}
                     <button class="btn-epikriz" onclick="copyE(${p.id})">📋 Epikrizi Kopyala</button>
                 `;
                 grid.appendChild(card);
@@ -461,9 +518,38 @@
                 notes: document.getElementById('pNotes').value,
                 tags: checkedTags
             };
+            // Preserve existing todos during edit
+            if(id) {
+                const existing = patients.find(p => p.id == id);
+                if(existing) data.todos = existing.todos;
+            }
             if(id) patients = patients.map(p => p.id == id ? data : p);
             else patients.push(data);
             save(); closeModal();
+        }
+
+        window.addTodo = (id) => {
+            const input = document.getElementById(`todoInp_${id}`);
+            const text = input.value.trim();
+            if(!text) return;
+            const p = patients.find(p => p.id === id);
+            if(!p.todos) p.todos = [];
+            p.todos.push({ text, completed: false });
+            save();
+        }
+
+        window.toggleTodo = (id, index) => {
+            const p = patients.find(p => p.id === id);
+            p.todos[index].completed = !p.todos[index].completed;
+            save();
+        }
+
+        window.deleteTodo = (id, index) => {
+            const p = patients.find(p => p.id === id);
+            if(p && p.todos) {
+                p.todos.splice(index, 1);
+                save();
+            }
         }
 
         window.exportData = () => {
@@ -500,7 +586,13 @@
                 if(diffOp >= 0) daysText += ` | Postop ${diffOp}. Gün`;
             }
 
-            navigator.clipboard.writeText(`Hasta: ${p.name}\nYatak: ${p.bed}${daysText}\nTanı: ${p.diag}${tagsStr}\nNot: ${p.notes}`).then(() => alert('Epikriz Kopyalandı!'));
+            let todoStr = '';
+            if(p.todos && p.todos.length > 0) {
+                const openTodos = p.todos.filter(t => !t.completed);
+                if(openTodos.length > 0) todoStr = `\nPlanlanan/Bekleyen İşler:\n` + openTodos.map(t => `- ${t.text}`).join('\n');
+            }
+
+            navigator.clipboard.writeText(`Hasta: ${p.name}\nYatak: ${p.bed}${daysText}\nTanı: ${p.diag}${tagsStr}\nNot: ${p.notes || '-'}${todoStr}`).then(() => alert('Epikriz Kopyalandı!'));
         }
 
         // 19 Adet Klinik Skorlama Motoru (Dinamik Render)
@@ -771,9 +863,47 @@
         document.getElementById('searchInput').oninput = (e) => render(e.target.value);
         document.getElementById('currentDate').innerText = new Date().toLocaleDateString('tr-TR', {weekday:'long', day:'numeric', month:'long'});
 
+        // THEME LOGIC
+        const THEME_KEY = 'kh_theme_stable_v1';
+        let isDark = localStorage.getItem(THEME_KEY) === 'dark';
+        window.toggleTheme = () => {
+            isDark = !isDark;
+            localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+            applyTheme();
+        }
+        function applyTheme() {
+            if(isDark) document.body.setAttribute('data-theme', 'dark');
+            else document.body.removeAttribute('data-theme');
+            document.querySelectorAll('.theme-btn-icon').forEach(i => i.innerText = isDark ? '☀️' : '🌙');
+        }
+        applyTheme();
+
+        // SORTABLE LOGIC
+        function initSortable() {
+            const grid = document.getElementById('patientGrid');
+            new Sortable(grid, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function () {
+                    const newOrderIds = Array.from(grid.children).map(c => parseInt(c.getAttribute('data-id')));
+                    const sorted = [];
+                    newOrderIds.forEach(id => {
+                        const p = patients.find(pt => pt.id === id);
+                        if(p) sorted.push(p);
+                    });
+                    patients.forEach(pt => {
+                        if(!newOrderIds.includes(pt.id)) sorted.push(pt);
+                    });
+                    patients = sorted;
+                    localStorage.setItem(KEY, JSON.stringify(patients));
+                }
+            });
+        }
+
         setupTabs(); 
         render();
         initTools();
+        initSortable();
 
         // PWA Service Worker Kaydı
         if ('serviceWorker' in navigator) {
