@@ -322,6 +322,7 @@
                     <div class="form-group"><label>Oda / Yatak</label><input type="text" id="pBed" required></div>
                     <div class="form-group"><label>Yatış Tarihi</label><input type="date" id="pDate" required></div>
                 </div>
+                <div class="form-group"><label>Ameliyat Tarihi <span style="font-weight:400; font-size:0.75rem; color:#64748b;">(Varsa/Opsiyonel)</span></label><input type="date" id="pOpDate"></div>
                 <div class="form-group"><label>Tanı</label><input type="text" id="pDiag" required></div>
                 <div class="form-group">
                     <label>Beklenen İşlem / Durum (Etiketler)</label>
@@ -370,11 +371,33 @@
                     tagsHtml = '<div class="tags-wrapper">' + p.tags.map(t => `<span class="tag-chip tag-${t}">${t}</span>`).join('') + '</div>';
                 }
 
+                let daysHtml = '';
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                if(p.date) {
+                    const admDate = new Date(p.date);
+                    admDate.setHours(0,0,0,0);
+                    const diffTime = Math.abs(today - admDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    daysHtml += `<span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:700; display:inline-block; margin-right:8px; margin-bottom:12px;">Yatış: ${diffDays}. Gün</span>`;
+                }
+                
+                if(p.opDate) {
+                    const opdDate = new Date(p.opDate);
+                    opdDate.setHours(0,0,0,0);
+                    const diffOp = Math.floor((today - opdDate) / (1000 * 60 * 60 * 24));
+                    if(diffOp >= 0) {
+                        daysHtml += `<span style="background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:700; display:inline-block; margin-bottom:12px;">Postop: ${diffOp}. Gün</span>`;
+                    }
+                }
+
                 const card = document.createElement('div');
                 card.className = cardClass;
                 card.innerHTML = `
                     <div class="card-header"><span class="p-bed">${p.bed}</span> <div><button class="btn-icon" onclick="editP(${p.id})">✏️</button><button class="btn-icon" onclick="deleteP(${p.id})" style="color:red">🗑️</button></div></div>
                     <h3>${p.name}</h3><div class="p-diagnosis">${p.diag}</div>
+                    <div>${daysHtml}</div>
                     ${tagsHtml}
                     <div class="p-notes">${p.notes || ''}</div>
                     <button class="btn-epikriz" onclick="copyE(${p.id})">📋 Epikrizi Kopyala</button>
@@ -404,6 +427,7 @@
             document.getElementById('pName').value = p.name;
             document.getElementById('pBed').value = p.bed;
             document.getElementById('pDate').value = p.date;
+            document.getElementById('pOpDate').value = p.opDate || '';
             document.getElementById('pDiag').value = p.diag;
             document.getElementById('pNotes').value = p.notes;
             document.querySelectorAll('#tagsSelector input').forEach(chk => chk.checked = p.tags && p.tags.includes(chk.value));
@@ -416,6 +440,7 @@
         document.getElementById('btnNewPatient').onclick = () => {
             document.getElementById('patientForm').reset();
             document.getElementById('pId').value = '';
+            document.getElementById('pOpDate').value = '';
             document.querySelectorAll('#tagsSelector input').forEach(chk => chk.checked = false);
             document.getElementById('patientModal').classList.add('active');
         }
@@ -431,6 +456,7 @@
                 name: document.getElementById('pName').value,
                 bed: document.getElementById('pBed').value,
                 date: document.getElementById('pDate').value,
+                opDate: document.getElementById('pOpDate').value,
                 diag: document.getElementById('pDiag').value,
                 notes: document.getElementById('pNotes').value,
                 tags: checkedTags
@@ -457,7 +483,24 @@
         window.copyE = (id) => {
             const p = patients.find(p => p.id === id);
             let tagsStr = p.tags && p.tags.length > 0 ? `\nPlan/Durum: ${p.tags.join(', ')}` : '';
-            navigator.clipboard.writeText(`Hasta: ${p.name}\nYatak: ${p.bed}\nTanı: ${p.diag}${tagsStr}\nNot: ${p.notes}`).then(() => alert('Epikriz Kopyalandı!'));
+            
+            let daysText = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            if(p.date) {
+                const admDate = new Date(p.date);
+                admDate.setHours(0,0,0,0);
+                const diffDays = Math.ceil(Math.abs(today - admDate) / (1000 * 60 * 60 * 24)) + 1;
+                daysText += `\nYatış: ${diffDays}. Gün`;
+            }
+            if(p.opDate) {
+                const opdDate = new Date(p.opDate);
+                opdDate.setHours(0,0,0,0);
+                const diffOp = Math.floor((today - opdDate) / (1000 * 60 * 60 * 24));
+                if(diffOp >= 0) daysText += ` | Postop ${diffOp}. Gün`;
+            }
+
+            navigator.clipboard.writeText(`Hasta: ${p.name}\nYatak: ${p.bed}${daysText}\nTanı: ${p.diag}${tagsStr}\nNot: ${p.notes}`).then(() => alert('Epikriz Kopyalandı!'));
         }
 
         // 19 Adet Klinik Skorlama Motoru (Dinamik Render)
