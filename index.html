@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KoruyucuHekim | Akıllı Servis Yönetimi</title>
+    
+    <!-- PWA & Apple Destek Etiketleri -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KoruyucuHekim">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon.svg">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7fb;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary: #475569;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --glass-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+
+        body { 
+            background-color: var(--bg-color); 
+            background-image: 
+                radial-gradient(circle at top right, #e0e7ff 0%, transparent 40%),
+                radial-gradient(circle at bottom left, #f3e8ff 0%, transparent 40%); 
+            color: var(--text-main); 
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
+
+        .glass { background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--glass-shadow); }
+
+        .app-container { display: flex; height: 100dvh; overflow: hidden; }
+
+        /* Mobile Header */
+        .mobile-header { 
+            display: none; 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            padding: 12px 20px; 
+            border-bottom: 1px solid #e2e8f0; 
+            align-items: center; 
+            justify-content: space-between; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1001;
+            width: 100%;
+        }
+
+        /* Sidebar Styles */
+        .sidebar { 
+            width: 280px; 
+            background: rgba(255, 255, 255, 0.98); 
+            border-right: 1px solid #e2e8f0; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 24px; 
+            z-index: 10; 
+            transition: 0.3s;
+        }
+
+        .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+        .logo { 
+            width: 46px; 
+            height: 46px; 
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); 
+            color: white; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 800; 
+            font-size: 1.2rem; 
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+        .brand h2 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text-main); }
+
+        .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .nav-divider { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 8px 12px; }
+        
+        .nav-menu a { 
+            text-decoration: none; 
+            color: var(--secondary); 
+            padding: 12px 14px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            transition: all 0.2s; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-size: 0.95rem; 
+        }
+        .nav-menu a:hover { background: #f1f5f9; color: var(--primary); }
+        .nav-menu a.active { background: #eff6ff; color: var(--primary); font-weight: 700; }
+        .nav-icon { font-size: 1.2rem; }
+
+        .user-profile { display: flex; align-items: center; gap: 12px; padding: 16px; margin-top: 24px; border-top: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+        .avatar { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .role { color: var(--success); font-weight: 700; font-size: 0.75rem; }
+
+        /* Main Content */
+        .main-content { flex: 1; overflow-y: auto; padding: 32px 48px; position: relative; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;}
+        .header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px;}
+
+        /* Metrics */
+        .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 32px; }
+        .metric-card { display: flex; align-items: center; gap: 20px; padding: 24px; }
+        .metric-icon { width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+        .metric-card h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        .metric-card .value { font-size: 2.2rem; font-weight: 800; color: var(--text-main); }
+
+        /* List UI */
+        .header-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .search-input { padding: 14px 20px; border-radius: 12px; border: 1px solid #e2e8f0; width: 320px; outline: none; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: 0.2s;}
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+
+        .patient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+        .patient-card { padding: 24px; position: relative; display: flex; flex-direction: column; cursor: grab; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .p-bed { background: #1e293b; color: white; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+        .patient-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; }
+        .p-diagnosis { font-weight: 600; background: #eff6ff; color: var(--primary); padding: 5px 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; display: inline-block;}
+        .p-notes { font-size: 0.95rem; color: var(--secondary); padding-top: 16px; border-top: 1px dashed #e2e8f0; line-height: 1.5; margin-bottom: 20px;}
+
+        .btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px;}
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2); }
+        .btn-secondary { background: #e2e8f0; color: var(--text-main); }
+        .btn-epikriz { background: #f8fafc; border: 1px solid #e2e8f0; width: 100%; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; color: var(--secondary); margin-top: auto;}
+
+        /* Tags */
+        .tags-wrapper { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag-chip { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+        .tag-Kan { background: #fee2e2; color: #991b1b; }
+        .tag-Konsültasyon { background: #fef08a; color: #854d0e; }
+        .tag-Görüntüleme { background: #e0e7ff; color: #3730a3; }
+        .tag-Taburcu { background: #dcfce7; color: #166534; }
+        .tag-Riskli { background: #ffedd5; color: #9a3412; }
+
+        /* Tools Grid */
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+        .tool-card { padding: 24px; }
+        .tool-icon { font-size: 2rem; margin-bottom: 16px; }
+        .calc-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 8px; }
+        .result-box { margin-top: 20px; padding: 16px; border-radius: 12px; background: #eff6ff; font-weight: 800; font-size: 1.1rem; color: var(--primary); text-align: center;}
+
+        /* Nav Bottom */
+        .nav-bottom { display: none; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.3s;}
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal { width: 90%; max-width: 600px; padding: 32px; max-height: 90dvh; overflow-y: auto; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--secondary); }
+        .form-group input, .form-group textarea { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 1rem; }
+
+        /* MOBILE OPTIMIZATION */
+        @media screen and (max-width: 768px) {
+            body { overflow-y: auto; overflow-x: hidden; }
+            .app-container { display: block; min-height: 100dvh; overflow-y: auto; }
+            .sidebar { display: none; }
+            .mobile-header { display: flex; width: 100%; position: sticky; top: 0; z-index: 1001; }
+            .nav-bottom { 
+                display: flex; 
+                position: fixed; 
+                bottom: 0; 
+                left: 0; 
+                width: 100%; 
+                background: rgba(255, 255, 255, 0.98); 
+                backdrop-filter: blur(10px);
+                height: 70px; 
+                border-top: 1px solid #e2e8f0; 
+                z-index: 1000; 
+                padding-bottom: 10px;
+                border-radius: 24px 24px 0 0;
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+            }
+            .nav-bottom a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; color: var(--secondary); gap: 2px; }
+            .nav-bottom a.active { color: var(--primary); }
+            .nav-bottom .nav-icon { font-size: 1.4rem; }
+            .nav-bottom .nav-text { font-size: 0.7rem; font-weight: 700; }
+
+            .main-content { padding: 24px 20px; padding-bottom: 100px; width: 100%; height: auto; overflow: visible; display: block; }
+            .metrics { grid-template-columns: 1fr; }
+            .search-input { width: 100%; }
+            .header-action { flex-direction: column; align-items: stretch; gap: 12px; }
+            .header { flex-direction: column; }
+            .header button { width: 100%; }
+            .patient-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- MOBILE HEADER -->
+        <header class="mobile-header">
+            <div class="brand" style="margin:0">
+                <div class="logo">KH</div>
+                <h2 style="font-size:1.1rem">KoruyucuHekim</h2>
+            </div>
+            <button class="btn-icon" style="background:none; border:none; font-size:1.4rem" onclick="exportData()">💾</button>
+        </header>
+
+        <!-- DESKTOP SIDEBAR -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo">KH</div>
+                <h2>KoruyucuHekim</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" data-tab="dashboard" class="active">
+                    <span class="nav-icon">🏥</span>
+                    <span class="nav-text">Panom</span>
+                </a>
+                <a href="#" data-tab="tools">
+                    <span class="nav-icon">🧮</span>
+                    <span class="nav-text">Klinik Araçlar</span>
+                </a>
+                <div class="nav-divider">Hafıza & Yedek</div>
+                <a href="#" onclick="exportData()"><span class="nav-icon">💾</span> <span class="nav-text">Verileri Yedekle</span></a>
+                <a href="#" onclick="importData()"><span class="nav-icon">📂</span> <span class="nav-text">Yedek Yükle</span></a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar">DR</div>
+                <div class="info">
+                    <p class="name" style="font-weight:700">Klinik Doktoru</p>
+                    <p class="role">🟢 Hafıza Aktif</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MOBILE BOTTOM NAV -->
+        <nav class="nav-bottom">
+            <a href="#" data-tab="dashboard" class="active">
+                <span class="nav-icon">🏥</span>
+                <span class="nav-text">Pano</span>
+            </a>
+            <a href="#" data-tab="tools">
+                <span class="nav-icon">🧮</span>
+                <span class="nav-text">Araçlar</span>
+            </a>
+            <a href="#" onclick="exportData()">
+                <span class="nav-icon">💾</span>
+                <span class="nav-text">Yedek</span>
+            </a>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-dashboard" class="tab-content active">
+                <header class="header">
+                    <div>
+                        <h1>Servis Durumu</h1>
+                        <p class="text-muted" id="currentDate">Tarih</p>
+                    </div>
+                    <button class="btn btn-primary" id="btnNewPatient">+ Yeni Hasta</button>
+                </header>
+
+                <div class="metrics">
+                    <div class="metric-card glass">
+                        <div class="metric-icon" style="background:rgba(37,99,235,0.1); color:var(--primary)">🏥</div>
+                        <div><h3>Yatan Hasta</h3><p class="value" id="valTotal">0</p></div>
+                    </div>
+                    <div class="metric-card glass">
+                        <div class="metric-icon" style="background:rgba(217,119,6,0.1); color:var(--warning)">⚡</div>
+                        <div><h3>Bekleyen Aksiyon</h3><p class="value" id="valAction">0</p></div>
+                    </div>
+                </div>
+
+                <div class="header-action">
+                    <h2 style="font-weight:800">Hasta Listesi</h2>
+                    <input type="text" id="searchInput" class="search-input" placeholder="İsim, Oda veya Tanı ara...">
+                </div>
+                <div class="patient-grid" id="patientGrid"></div>
+            </div>
+
+            <!-- TAB: TOOLS -->
+            <div id="tab-tools" class="tab-content">
+                <header class="header">
+                    <h1>Medikal Araçlar</h1>
+                </header>
+                <div class="tools-grid" id="mainToolsGrid">
+                    <!-- Dinamik olarak JS ile 19 araç eklenecek -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="patientModal">
+        <div class="modal glass">
+            <h2 id="modalTitle" style="margin-bottom:20px">Yeni Hasta</h2>
+            <form id="patientForm">
+                <input type="hidden" id="pId">
+                <div class="form-group"><label>Ad Soyad</label><input type="text" id="pName" required></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+                    <div class="form-group"><label>Oda / Yatak</label><input type="text" id="pBed" required></div>
+                    <div class="form-group"><label>Yatış Tarihi</label><input type="date" id="pDate" required></div>
+                </div>
+                <div class="form-group"><label>Ameliyat Tarihi <span style="font-weight:400; font-size:0.75rem; color:#64748b;">(Varsa/Opsiyonel)</span></label><input type="date" id="pOpDate"></div>
+                <div class="form-group"><label>Tanı</label><input type="text" id="pDiag" required></div>
+                <div class="form-group">
+                    <label>Beklenen İşlem / Durum (Etiketler)</label>
+                    <div style="display: flex; gap: 8px; flex-direction: column; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 12px;" id="tagsSelector">
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:0.9rem; cursor:pointer;"><input type="checkbox" value="Riskli" style="width:18px; height:18px;"> 🟠 Riskli</label>
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:0.9rem; cursor:pointer;"><input type="checkbox" value="Taburcu" style="width:18px; height:18px;"> 🟢 Taburcu</label>
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:0.9rem; cursor:pointer;"><input type="checkbox" value="Konsültasyon" style="width:18px; height:18px;"> 🟡 Konsültasyon</label>
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:0.9rem; cursor:pointer;"><input type="checkbox" value="Görüntüleme" style="width:18px; height:18px;"> 🔵 Görüntüleme</label>
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:0.9rem; cursor:pointer;"><input type="checkbox" value="Kan" style="width:18px; height:18px;"> 💉 Kan/Tetkik</label>
+                    </div>
+                </div>
+                <div class="form-group"><label>Notlar</label><textarea id="pNotes" rows="3"></textarea></div>
+                <div style="display:flex; justify-content:flex-end; gap:12px">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const KEY = 'kh_data_stable_v1';
+        let patients = [];
+        try {
+            const raw = localStorage.getItem(KEY);
+            if(raw) patients = JSON.parse(raw);
+        } catch (e) {
+            console.error("Veri yukleme hatasi, sifirlaniyor...", e);
+        }
+
+        function save() { localStorage.setItem(KEY, JSON.stringify(patients)); render(); }
+
+        function render(filter = '') {
+            const grid = document.getElementById('patientGrid');
+            grid.innerHTML = '';
+            let list = patients;
+            if(filter) list = patients.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()) || p.bed.toLowerCase().includes(filter.toLowerCase()));
+            
+            list.forEach(p => {
+                let cardClass = 'patient-card glass';
+                if(p.tags && p.tags.includes('Riskli')) cardClass += ' card-risk';
+                if(p.tags && p.tags.includes('Taburcu')) cardClass += ' card-discharge';
+                
+                let tagsHtml = '';
+                if(p.tags && p.tags.length > 0) {
+                    tagsHtml = '<div class="tags-wrapper">' + p.tags.map(t => `<span class="tag-chip tag-${t}">${t}</span>`).join('') + '</div>';
+                }
+
+                let daysHtml = '';
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                if(p.date) {
+                    const admDate = new Date(p.date);
+                    admDate.setHours(0,0,0,0);
+                    const diffTime = Math.abs(today - admDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    daysHtml += `<span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:700; display:inline-block; margin-right:8px; margin-bottom:12px;">Yatış: ${diffDays}. Gün</span>`;
+                }
+                
+                if(p.opDate) {
+                    const opdDate = new Date(p.opDate);
+                    opdDate.setHours(0,0,0,0);
+                    const diffOp = Math.floor((today - opdDate) / (1000 * 60 * 60 * 24));
+                    if(diffOp >= 0) {
+                        daysHtml += `<span style="background:#fef08a; color:#854d0e; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:700; display:inline-block; margin-bottom:12px;">Postop: ${diffOp}. Gün</span>`;
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = cardClass;
+                card.innerHTML = `
+                    <div class="card-header"><span class="p-bed">${p.bed}</span> <div><button class="btn-icon" onclick="editP(${p.id})">✏️</button><button class="btn-icon" onclick="deleteP(${p.id})" style="color:red">🗑️</button></div></div>
+                    <h3>${p.name}</h3><div class="p-diagnosis">${p.diag}</div>
+                    <div>${daysHtml}</div>
+                    ${tagsHtml}
+                    <div class="p-notes">${p.notes || ''}</div>
+                    <button class="btn-epikriz" onclick="copyE(${p.id})">📋 Epikrizi Kopyala</button>
+                `;
+                grid.appendChild(card);
+            });
+            document.getElementById('valTotal').innerText = patients.length;
+            document.getElementById('valAction').innerText = patients.filter(p => p.tags && p.tags.length > 0 && !p.tags.includes("Taburcu")).length;
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('[data-tab]').forEach(link => {
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    const tab = link.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById('tab-' + tab).classList.add('active');
+                    document.querySelectorAll('[data-tab]').forEach(l => l.classList.remove('active'));
+                    document.querySelectorAll(`[data-tab="${tab}"]`).forEach(l => l.classList.add('active'));
+                }
+            });
+        }
+
+        window.editP = (id) => {
+            const p = patients.find(p => p.id === id);
+            document.getElementById('pId').value = p.id;
+            document.getElementById('pName').value = p.name;
+            document.getElementById('pBed').value = p.bed;
+            document.getElementById('pDate').value = p.date;
+            document.getElementById('pOpDate').value = p.opDate || '';
+            document.getElementById('pDiag').value = p.diag;
+            document.getElementById('pNotes').value = p.notes;
+            document.querySelectorAll('#tagsSelector input').forEach(chk => chk.checked = p.tags && p.tags.includes(chk.value));
+            document.getElementById('patientModal').classList.add('active');
+        }
+
+        window.deleteP = (id) => { if(confirm('Silinsin mi?')) { patients = patients.filter(p => p.id !== id); save(); } }
+        window.closeModal = () => document.getElementById('patientModal').classList.remove('active');
+        
+        document.getElementById('btnNewPatient').onclick = () => {
+            document.getElementById('patientForm').reset();
+            document.getElementById('pId').value = '';
+            document.getElementById('pOpDate').value = '';
+            document.querySelectorAll('#tagsSelector input').forEach(chk => chk.checked = false);
+            document.getElementById('patientModal').classList.add('active');
+        }
+
+        document.getElementById('patientForm').onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('pId').value;
+            const checkedTags = [];
+            document.querySelectorAll('#tagsSelector input:checked').forEach(chk => checkedTags.push(chk.value));
+            
+            const data = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('pName').value,
+                bed: document.getElementById('pBed').value,
+                date: document.getElementById('pDate').value,
+                opDate: document.getElementById('pOpDate').value,
+                diag: document.getElementById('pDiag').value,
+                notes: document.getElementById('pNotes').value,
+                tags: checkedTags
+            };
+            if(id) patients = patients.map(p => p.id == id ? data : p);
+            else patients.push(data);
+            save(); closeModal();
+        }
+
+        window.exportData = () => {
+            const blob = new Blob([JSON.stringify(patients)], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `KH_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
+        }
+
+        window.importData = () => {
+            const input = document.createElement('input'); input.type = 'file';
+            input.onchange = e => {
+                const reader = new FileReader(); reader.readAsText(e.target.files[0]);
+                reader.onload = () => { if(confirm('Verileri yükle?')) { patients = JSON.parse(reader.result); save(); } }
+            }; input.click();
+        }
+
+        window.copyE = (id) => {
+            const p = patients.find(p => p.id === id);
+            let tagsStr = p.tags && p.tags.length > 0 ? `\nPlan/Durum: ${p.tags.join(', ')}` : '';
+            
+            let daysText = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            if(p.date) {
+                const admDate = new Date(p.date);
+                admDate.setHours(0,0,0,0);
+                const diffDays = Math.ceil(Math.abs(today - admDate) / (1000 * 60 * 60 * 24)) + 1;
+                daysText += `\nYatış: ${diffDays}. Gün`;
+            }
+            if(p.opDate) {
+                const opdDate = new Date(p.opDate);
+                opdDate.setHours(0,0,0,0);
+                const diffOp = Math.floor((today - opdDate) / (1000 * 60 * 60 * 24));
+                if(diffOp >= 0) daysText += ` | Postop ${diffOp}. Gün`;
+            }
+
+            navigator.clipboard.writeText(`Hasta: ${p.name}\nYatak: ${p.bed}${daysText}\nTanı: ${p.diag}${tagsStr}\nNot: ${p.notes}`).then(() => alert('Epikriz Kopyalandı!'));
+        }
+
+        // 19 Adet Klinik Skorlama Motoru (Dinamik Render)
+        const medTools = [
+          {
+            id: "qsofa", title: "qSOFA Skoru", icon: "🩺",
+            fields: [
+              {type: "check", label: "Solunum ≥ 22/dk", score: 1},
+              {type: "check", label: "Bilinç Değişikliği", score: 1},
+              {type: "check", label: "Sistolik KB ≤ 100", score: 1}
+            ],
+            calc: (s) => `Skor: ${s} / 3 - ${s>=2?'Yüksek Risk (Sepsis)':'Düşük Risk'}`
+          },
+          {
+            id: "gks", title: "Glasgow Koma Skalası (GKS)", icon: "🧠",
+            fields: [
+              {type:"select", label:"Göz (E)", opts:[[4,"4 - Spontan"],[3,"3 - Sese"],[2,"2 - Ağrıya"],[1,"1 - Yanıt Yok"]]},
+              {type:"select", label:"Sözel (V)", opts:[[5,"5 - Oryante"],[4,"4 - Konfüze"],[3,"3 - Uygunsuz Kelimeler"],[2,"2 - Anlamsız Sesler"],[1,"1 - Yanıt Yok"]]},
+              {type:"select", label:"Motor (M)", opts:[[6,"6 - Emirlere Uyar"],[5,"5 - Ağrıya Lokalize"],[4,"4 - Ağrıdan Çeker"],[3,"3 - Fleksiyon (Dekortike)"],[2,"2 - Ekstansiyon (Deserebre)"],[1,"1 - Yanıt Yok"]]}
+            ],
+            calc: (s) => `GKS: ${s} / 15 (${s<=8?'Ağır / Koma':(s>=13?'Hafif':'Orta')})`
+          },
+          {
+            id: "news2", title: "NEWS2 Skoru", icon: "📈",
+            fields: [
+              {type:"select", label:"Solunum Sayısı", opts:[[0,"12 - 20"],[1,"9-11"],[2,"21-24"],[3,"<8 veya ≥25"]]},
+              {type:"select", label:"Oksijen Desteği", opts:[[0,"Yok (Oda Havası)"],[2,"Var"]]},
+              {type:"select", label:"Sistolik Kan Basıncı", opts:[[0,"111 - 219"],[1,"101 - 110"],[2,"91 - 100"],[3,"≤90 veya ≥220"]]},
+              {type:"select", label:"Nabız", opts:[[0,"51 - 90"],[1,"41-50 veya 91-110"],[2,"111-130"],[3,"≤40 veya ≥131"]]},
+              {type:"select", label:"Bilinç Düzeyi", opts:[[0,"A (Uyanık)"],[3,"CVPU (Uyanık Değil)"]]},
+              {type:"select", label:"Ateş (°C)", opts:[[0,"36.1 - 38.0"],[1,"35.1-36.0 veya 38.1-39.0"],[2,"≥ 39.1"],[3,"≤ 35.0"]]}
+            ],
+            calc: (s) => `NEWS2: ${s} - ${s>=7?'Kritik Risk (Acil Vahim)':(s>=5?'Yüksek Risk':(s>=3?'Orta Risk':'Düşük Risk'))}`
+          },
+          {
+            id: "apache", title: "APACHE II Skoru (Temel)", icon: "🧮",
+            fields: [
+              {type:"select", label:"Yaş", opts:[[0,"≤44"],[2,"45-54"],[3,"55-64"],[5,"65-74"],[6,"≥75"]]},
+              {type:"select", label:"Ateş (Rektal °C)", opts:[[0,"36.0 - 38.4"],[1,"34.0 - 35.9 / 38.5 - 38.9"],[2,"32.0 - 33.9"],[3,"39.0 - 40.9"],[4,"≥41.0 veya 30.0 - 31.9"]]},
+              {type:"select", label:"Ortalama Arter Basıncı (MAP)", opts:[[0,"70 - 109"],[2,"50 - 69 / 110 - 129"],[3,"130 - 159"],[4,"≥160 veya ≤49"]]},
+              {type:"select", label:"Kalp Hızı (Nabız)", opts:[[0,"70 - 109"],[2,"55 - 69 / 110 - 139"],[3,"40 - 54 / 140 - 179"],[4,"≥180 veya ≤39"]]},
+              {type:"select", label:"GKS (Bozukluk Puanı: 15 - GKS)", opts:[[0,"15 (0 Puan)"],[1,"14 (1 Puan)"],[2,"13 (2 Puan)"],[3,"12 (3 Puan)"],[4,"11 (4 Puan)"],[5,"10 (5 Puan)"],[6,"9 (6 Puan)"],[7,"8 (7 Puan)"],[8,"7 (8 Puan)"],[9,"6 (9 Puan)"],[10,"5 (10 Puan)"],[11,"4 (11 Puan)"],[12,"3 (12 Puan)"]]},
+              {type:"select", label:"Kronik Organ Yetmezliği Durumu", opts:[[0,"Yok"],[2,"Elektif Cerrahi"],[5,"Acil Cerrahi veya Non-operatif"]]}
+            ],
+            calc: (s) => `Skor: ${s} (Fizyolojik Lab. değerleri eklendiğinde tam skoru verir)`
+          },
+          {
+            id: "sofa", title: "SOFA Skoru", icon: "⚠️",
+            fields: [
+              {type:"select", label:"Solunum (PaO2/FiO2)", opts:[[0,"≥ 400"],[1,"< 400"],[2,"< 300"],[3,"< 200"],[4,"< 100"]]},
+              {type:"select", label:"Koagülasyon (Trombosit)", opts:[[0,"≥ 150"],[1,"< 150"],[2,"< 100"],[3,"< 50"],[4,"< 20"]]},
+              {type:"select", label:"Karaciğer (Bilirubin)", opts:[[0,"< 1.2"],[1,"1.2 - 1.9"],[2,"2.0 - 5.9"],[3,"6.0 - 11.9"],[4,"> 12.0"]]},
+              {type:"select", label:"Kardiyovasküler (Tansiyon)", opts:[[0,"MAP ≥ 70"],[1,"MAP < 70"],[2,"Dopamin ≤ 5"],[3,"Dopamin > 5 veya Epinefrin ≤ 0.1"],[4,"Dopamin > 15 veya Epinefrin > 0.1"]]},
+              {type:"select", label:"SSS (GKS)", opts:[[0,"15"],[1,"13 - 14"],[2,"10 - 12"],[3,"6 - 9"],[4,"< 6"]]},
+              {type:"select", label:"Böbrek (Kreatinin)", opts:[[0,"< 1.2"],[1,"1.2 - 1.9"],[2,"2.0 - 3.4"],[3,"3.5 - 4.9"],[4,"> 5.0"]]}
+            ],
+            calc: (s) => `SOFA: ${s} - ${s>=2?'Sepsis! (Akut Organ Yetmezliği)':'Düşük Risk'}`
+          },
+          {
+            id: "wells", title: "Wells (Pulmoner Emboli)", icon: "🫁",
+            fields: [
+              {type:"check", label:"DVT semptom ve bulguları", score: 3},
+              {type:"check", label:"Alternatif tanı PE'den daha zayıf", score: 3},
+              {type:"check", label:"Nabız > 100", score: 1.5},
+              {type:"check", label:"İmmobilizasyon/Cerrahi (Son 4 haf.)", score: 1.5},
+              {type:"check", label:"Önceki DVT/PE öyküsü", score: 1.5},
+              {type:"check", label:"Hemoptizi", score: 1},
+              {type:"check", label:"Kanser (tedavi alan veya palyatif)", score: 1}
+            ],
+            calc: (s) => `Wells Skoru: ${s} - ${s>4 ? 'PE Yüksek Olasılık (Görüntüleme Gerekir)' : 'PE Düşük Olasılık'}`
+          },
+          {
+            id: "perc", title: "PERC Kuralı (PE Dışlama)", icon: "🛡️",
+            fields: [
+              {type:"check", label:"Yaş ≥ 50", score: 1},
+              {type:"check", label:"Nabız ≥ 100/dk", score: 1},
+              {type:"check", label:"Oda havasında O2 Sat < %95", score: 1},
+              {type:"check", label:"Hemoptizi VAR", score: 1},
+              {type:"check", label:"Östrojen kullanımı VAR", score: 1},
+              {type:"check", label:"Geçirilmiş DVT/PE öyküsü VAR", score: 1},
+              {type:"check", label:"Son 4 haftada cerrahi/travma VAR", score: 1},
+              {type:"check", label:"Tek taraflı bacak şişliği VAR", score: 1}
+            ],
+            calc: (s) => `Sonuç: ${s===0 ? 'PERC Negatif (PE dışlandı, tetkik gerekmez)' : 'PERC Pozitif (Tetkik/D-dimer gerek)'}`
+          },
+          {
+            id: "timi", title: "TIMI Skoru (NSTEMI/UA)", icon: "🫀",
+            fields: [
+              {type:"check", label:"Yaş ≥ 65", score: 1},
+              {type:"check", label:"≥3 KAH Risk Faktörü", score: 1},
+              {type:"check", label:"Bilinen KAH (Stenoz ≥ %50)", score: 1},
+              {type:"check", label:"Son 7 günde ASA kullanımı", score: 1},
+              {type:"check", label:"Son 24 saatte ≥2 anjinal atak", score: 1},
+              {type:"check", label:"EKG'de ST sapması ≥0.5 mm", score: 1},
+              {type:"check", label:"Kardiyak marker (Troponin) yüksek", score: 1}
+            ],
+            calc: (s) => `Skor: ${s}/7 - Risk: ${s>=5?'Yüksek':(s>=3?'Orta':'Düşük')} Tüm Nedenlere Bağlı Mortalite %${s===0?'4.7':(s>=3?'13.2':(s>=5?'26.2':'40.9'))}`
+          },
+          {
+            id: "heart", title: "HEART Skoru", icon: "❤️",
+            fields: [
+              {type:"select", label:"Öykü (Anamnez)", opts:[[0,"Hafif Şüpheli"],[1,"Orta Derece Şüpheli"],[2,"Yüksek Şüpheli (Tipik Angina)"]]},
+              {type:"select", label:"EKG", opts:[[0,"Normal"],[1,"Non-spesifik repolarizasyon bozukluğu"], [2,"Anlamlı ST çökmesi"]]},
+              {type:"select", label:"Yaş", opts:[[0,"< 45"],[1,"45 - 64"],[2,"≥ 65"]]},
+              {type:"select", label:"Risk Faktörleri", opts:[[0,"Yok"],[1,"1 - 2 Risk Faktörü"],[2,"≥ 3 Risk Faktörü"]]},
+              {type:"select", label:"Troponin", opts:[[0,"Normal Sınırda"],[1,"1x - 3x Normalin Üstü"],[2,"> 3x Normalin Üstü"]]}
+            ],
+            calc: (s) => `HEART: ${s}/10 - ${s>=7?'Yüksek Risk (MACE %50-65)': (s>=4?'Orta Risk (MACE %12-20)':'Düşük Risk (MACE %1-2)')}`
+          },
+          {
+            id:"chads", title:"CHA2DS2-VASc Skoru", icon:"🩸",
+            fields:[
+              {type:"check", label:"Konjestif Kalp Yetmezliği", score:1},
+              {type:"check", label:"Hipertansiyon", score:1},
+              {type:"check", label:"Yaş ≥ 75", score:2},
+              {type:"check", label:"Diabetes Mellitus", score:1},
+              {type:"check", label:"İnme / TİA / Tromboemboli", score:2},
+              {type:"check", label:"Vasküler Hastalık", score:1},
+              {type:"check", label:"Yaş 65-74", score:1},
+              {type:"check", label:"Kadın Cinsiyet", score:1}
+            ],
+            calc: (s) => `Skor: ${s} - Yıllık İnme Riski Yüksek (Antikoagülan Düşünülmeli)`
+          },
+          {
+            id:"hasbled", title:"HAS-BLED Skoru", icon:"⚠️",
+            fields:[
+              {type:"check", label:"Hipertansiyon (Sistolik > 160)", score:1},
+              {type:"check", label:"Anormal Böbrek Fonksiyonu", score:1},
+              {type:"check", label:"Anormal Karaciğer Fonksiyonu", score:1},
+              {type:"check", label:"İnme Öyküsü", score:1},
+              {type:"check", label:"Kanama (Öykü veya anemi)", score:1},
+              {type:"check", label:"Labil INR", score:1},
+              {type:"check", label:"Yaş > 65", score:1},
+              {type:"check", label:"İlaç (Aspirin/NSAID vb)", score:1},
+              {type:"check", label:"Alkol (≥8 kadeh/hafta)", score:1}
+            ],
+            calc: (s) => `Skor: ${s}/9 - ${s>=3?'Yüksek Kanama Riski!':'Kabul Edilebilir Risk'}`
+          },
+          {
+            id:"nexus", title:"NEXUS Kriterleri (C-Spine)", icon:"🦴",
+            fields:[
+              {type:"check", label:"Fokal nörolojik defisit VAR", score:1},
+              {type:"check", label:"Orta hat servikal hassasiyet VAR", score:1},
+              {type:"check", label:"Bilinç seviyesinde değişme VAR", score:1},
+              {type:"check", label:"İntoksikasyon bulgusu VAR", score:1},
+              {type:"check", label:"Dikkati dağıtan ağrılı yaralanma VAR", score:1}
+            ],
+            calc: (s) => s>0 ? `Sonuç: Görüntüleme GEREKLİ` : `NEXUS Negatif (Görüntüleme Gerekmez)`
+          },
+          {
+            id:"canadian", title:"Canadian C-Spine Kuralı", icon:"🇨🇦",
+            fields:[
+              {type:"check", label:"Yüksek Riskli Faktör VAR (Yaş ≥65, Tehlikeli mek vb)", score:1},
+              {type:"check", label:"Düşük Riskli Faktör YOK", score:1},
+              {type:"check", label:"Boynu aktif 45° SAĞA/SOLA ÇEVİREMİYOR", score:1}
+            ],
+            calc: (s) => s>0 ? `Sonuç: Görüntüleme GEREKLİ` : `Sonuç: Görüntüleme Gerekmez`
+          },
+          {
+            id:"curb", title:"CURB-65 (Pnömoni)", icon:"🫁",
+            fields:[
+              {type:"check", label:"Konfüzyon (Mental Durum Bdz.)", score:1},
+              {type:"check", label:"Üre > 42.8 mg/dL veya BUN > 20", score:1},
+              {type:"check", label:"Solunum ≥ 30/dk", score:1},
+              {type:"check", label:"Sistolik < 90 veya Diastolik ≤ 60", score:1},
+              {type:"check", label:"Yaş ≥ 65", score:1}
+            ],
+            calc: (s) => `CURB-65 Skoru: ${s} - ${s>=3?'Yüksek Risk (Ağır Pnömoni / YBÜ)':(s>=2?'Orta Risk (Hastaneye Yatış)':'Düşük Risk (Ayaktan)')}`
+          },
+          {
+            id:"spesi", title:"Basitleştirilmiş PESI (sPESI)", icon:"📈",
+            fields:[
+              {type:"check", label:"Yaş > 80", score:1},
+              {type:"check", label:"Kanser Öyküsü", score:1},
+              {type:"check", label:"Kronik Kalp veya Akciğer Yetmezliği", score:1},
+              {type:"check", label:"Nabız ≥ 110/dk", score:1},
+              {type:"check", label:"Sistolik KB < 100 mmHg", score:1},
+              {type:"check", label:"Oda Havasında O2 Sat < %90", score:1}
+            ],
+            calc: (s) => `sPESI Skoru: ${s} - ${s>=1 ? 'Yüksek Risk (Yatış Gerekir)' : 'Düşük Risk (Ayaktan Düşünülebilir)'}`
+          },
+          {
+            id:"alvarado", title:"Alvarado Skoru (Apendisit)", icon:"🦠",
+            fields:[
+              {type:"check", label:"Sağ alt kadrana göç eden ağrı", score:1},
+              {type:"check", label:"İştahsızlık", score:1},
+              {type:"check", label:"Bulantı / Kusma", score:1},
+              {type:"check", label:"Sağ alt kadranda hassasiyet", score:2},
+              {type:"check", label:"Rebound hassasiyet", score:1},
+              {type:"check", label:"Ateş ≥ 37.3°C", score:1},
+              {type:"check", label:"Lökositoz (>10.000)", score:2},
+              {type:"check", label:"Sola kayma (Nötrofil > %75)", score:1}
+            ],
+            calc: (s) => `Alvarado: ${s}/10 - ${s>=7?'Apendisit İhtimali Yüksek (Cerrahi Kons.)':(s>=5?'Şüpheli (Gözlem / Görüntüleme)':'Düşük İhtimal')}`
+          },
+          {
+            id:"ranson", title:"Ranson Kriterleri (Geliş Anı)", icon:"🧪",
+            fields:[
+              {type:"check", label:"Yaş > 55", score:1},
+              {type:"check", label:"Lökosit > 16.000 /mm3", score:1},
+              {type:"check", label:"Kan Şekeri > 200 mg/dL", score:1},
+              {type:"check", label:"AST > 250 U/L", score:1},
+              {type:"check", label:"LDH > 350 U/L", score:1}
+            ],
+            calc: (s) => `Skor: ${s} (Sadece Geliş) - Mortalite Riski: ${s>=3?'Artmış (Şiddetli Pankreatit, YBÜ)': 'Düşük'}`
+          },
+          {
+            id:"glasgow_b", title:"Glasgow-Blatchford (Gis Kanama)", icon:"🩸",
+            fields:[
+              {type:"select", label:"BUN (mg/dL)", opts:[[0,"< 18.2"],[2,"18.2 - 22.3"],[3,"22.4 - 27.9"],[4,"28.0 - 70.0"],[6,"> 70.0"]]},
+              {type:"select", label:"Hemoglobin (G/dL) (Erkek)", opts:[[0,"Normal veya Kadın"],[1,"12 - 12.9"],[3,"10 - 11.9"],[6,"< 10.0"]]},
+              {type:"select", label:"Hemoglobin (G/dL) (Kadın)", opts:[[0,"Normal veya Erkek"],[1,"10 - 11.9"],[6,"< 10.0"]]},
+              {type:"select", label:"Sistolik KB", opts:[[0,"≥ 110"],[1,"100 - 109"],[2,"90 - 99"],[3,"< 90"]]},
+              {type:"check", label:"Nabız ≥ 100/dk", score:1},
+              {type:"check", label:"Melena öyküsü", score:1},
+              {type:"check", label:"Senkop öyküsü", score:2},
+              {type:"check", label:"Hepatik Hastalık (Siroz)", score:2},
+              {type:"check", label:"Kalp Yetmezliği", score:2}
+            ],
+            calc: (s) => `GBS Skoru: ${s} - ${s>0 ? 'Endoskopi / Yatış İhtiyacı YÜKSEK' : 'Düşük Risk (Ayaktan Taburcu Düşünülebilir)'}`
+          },
+          {
+            id:"rockall", title:"Rockall Skoru (Klinik - Endoskopi Öncesi)", icon:"📉",
+            fields:[
+              {type:"select", label:"Yaş", opts:[[0,"< 60"],[1,"60 - 79"],[2,"≥ 80"]]},
+              {type:"select", label:"Şok Durumu (Sistolik KB / Nabız)", opts:[[0,"Klinik şok yok (KB>100, Nabız<100)"],[1,"Taşikardi var (Nabız>100 ama KB>100)"],[2,"Şok (KB<100)"]]},
+              {type:"select", label:"Ek Hastalık (Komorbidite)", opts:[[0,"Majör ek hastalık yok"],[2,"KY, İskemik kalp hst., majör komorbidite"],[3,"Böbrek/Karaciğer yetm., dissemine malignite"]]}
+            ],
+            calc: (s) => `Klinik Rockall: ${s} - ${s>=3?'Yüksek Risk (Mortalite/Tekrar Kanama)':'Düşük/Orta Risk'}`
+          }
+        ];
+
+        function initTools() {
+            const grid = document.getElementById('mainToolsGrid');
+            grid.innerHTML = '';
+            medTools.forEach(tool => {
+                let html = `<div class="tool-card glass"><div class="tool-icon">${tool.icon}</div><h3>${tool.title}</h3>`;
+                tool.fields.forEach((f, i) => {
+                    const fid = `t_${tool.id}_${i}`;
+                    if(f.type === 'check') {
+                        html += `<label class="check-container" style="display:block; margin:10px 0"><input type="checkbox" id="${fid}" data-score="${f.score}" class="tc_${tool.id}"> <span style="font-size:0.9rem">${f.label}</span></label>`;
+                    } else if (f.type === 'select') {
+                        html += `<div class="form-group"><label>${f.label}</label><select id="${fid}" class="calc-select tc_${tool.id}">`;
+                        f.opts.forEach(opt => {
+                            html += `<option value="${opt[0]}">${opt[1]}</option>`;
+                        });
+                        html += `</select></div>`;
+                    }
+                });
+                html += `<div class="result-box mt-3" id="res_${tool.id}" style="font-size:0.95rem;">Skor: 0</div></div>`;
+                grid.innerHTML += html;
+            });
+            
+            medTools.forEach(tool => {
+                const updateCalc = () => {
+                    let score = 0;
+                    document.querySelectorAll(`.tc_${tool.id}`).forEach(input => {
+                        if(input.type === 'checkbox') { if(input.checked) score += parseFloat(input.getAttribute('data-score')); }
+                        else score += parseFloat(input.value);
+                    });
+                    document.getElementById(`res_${tool.id}`).innerText = tool.calc(score);
+                };
+                document.querySelectorAll(`.tc_${tool.id}`).forEach(el => el.addEventListener('change', updateCalc));
+                updateCalc(); // ilk render için çalıştır
+            });
+        }
+
+        document.getElementById('searchInput').oninput = (e) => render(e.target.value);
+        document.getElementById('currentDate').innerText = new Date().toLocaleDateString('tr-TR', {weekday:'long', day:'numeric', month:'long'});
+
+        setupTabs(); 
+        render();
+        initTools();
+
+        // PWA Service Worker Kaydı
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('✅ PWA ServiceWorker Aktif - Çevrimdışı Kullanıma Hazır:', reg.scope))
+                .catch(err => console.log('⚠️ PWA ServiceWorker Hatası:', err));
+            });
+        }
+    </script>
+</body>
+</html>
