@@ -40,13 +40,13 @@
                 radial-gradient(circle at top right, #e0e7ff 0%, transparent 40%),
                 radial-gradient(circle at bottom left, #f3e8ff 0%, transparent 40%); 
             color: var(--text-main); 
-            min-height: 100vh;
+            min-height: 100dvh;
             overflow-x: hidden;
         }
 
         .glass { background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--glass-shadow); }
 
-        .app-container { display: flex; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; height: 100dvh; overflow: hidden; }
 
         /* Mobile Header */
         .mobile-header { 
@@ -137,7 +137,7 @@
         .search-input { padding: 14px 20px; border-radius: 12px; border: 1px solid #e2e8f0; width: 320px; outline: none; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: 0.2s;}
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
 
-        .patient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
+        .patient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; }
         .patient-card { padding: 24px; position: relative; display: flex; flex-direction: column; cursor: grab; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .p-bed { background: #1e293b; color: white; padding: 4px 12px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
@@ -161,7 +161,7 @@
         .tag-Riskli { background: #ffedd5; color: #9a3412; }
 
         /* Tools Grid */
-        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; }
         .tool-card { padding: 24px; }
         .tool-icon { font-size: 2rem; margin-bottom: 16px; }
         .calc-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 8px; }
@@ -173,7 +173,7 @@
         /* Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.3s;}
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal { width: 90%; max-width: 600px; padding: 32px; max-height: 90vh; overflow-y: auto; }
+        .modal { width: 90%; max-width: 600px; padding: 32px; max-height: 90dvh; overflow-y: auto; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--secondary); }
         .form-group input, .form-group textarea { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 1rem; }
@@ -181,7 +181,7 @@
         /* MOBILE OPTIMIZATION */
         @media screen and (max-width: 768px) {
             body { overflow-y: auto; overflow-x: hidden; }
-            .app-container { display: block; min-height: 100vh; overflow-y: auto; }
+            .app-container { display: block; min-height: 100dvh; overflow-y: auto; }
             .sidebar { display: none; }
             .mobile-header { display: flex; width: 100%; position: sticky; top: 0; z-index: 1001; }
             .nav-bottom { 
@@ -344,7 +344,13 @@
 
     <script>
         const KEY = 'kh_data_stable_v1';
-        let patients = JSON.parse(localStorage.getItem(KEY)) || [];
+        let patients = [];
+        try {
+            const raw = localStorage.getItem(KEY);
+            if(raw) patients = JSON.parse(raw);
+        } catch (e) {
+            console.error("Veri yukleme hatasi, sifirlaniyor...", e);
+        }
 
         function save() { localStorage.setItem(KEY, JSON.stringify(patients)); render(); }
 
